@@ -127,14 +127,15 @@ public final class QodDriver implements Driver {
     return out.toArray(new DriverPropertyInfo[0]);
   }
 
+  /** The embedded Arrow driver's version, which is this driver's version too. */
   @Override
   public int getMajorVersion() {
-    return 0;
+    return delegate.get().getMajorVersion();
   }
 
   @Override
   public int getMinorVersion() {
-    return 1;
+    return delegate.get().getMinorVersion();
   }
 
   @Override

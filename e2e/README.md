@@ -15,8 +15,8 @@ Not part of `mvn verify`. Needs Docker, Node, Google Chrome and a QoD manager ja
    qod serve --demo --jar <manager jar> --pg-port 25499
    ```
 
-4. `javac -cp ../target/qod-jdbc-*.jar -d out src/ai/starlake/qod/jdbc/E2e.java`, then
-   `java -De2e.dir=$PWD -cp out:../target/qod-jdbc-0.1.0-SNAPSHOT.jar ai.starlake.qod.jdbc.E2e acme alice demo-alice-kc`
+4. `javac -cp ../target/qod-jdbc-19.0.0.jar -d out src/ai/starlake/qod/jdbc/E2e.java`, then
+   `java -De2e.dir=$PWD -cp out:../target/qod-jdbc-19.0.0.jar ai.starlake.qod.jdbc.E2e acme alice demo-alice-kc`
    (the data-plane provider: tenant `acme` signs in with passwords).
 5. Switch `acme` to its own SSO as a superuser (`POST /api/tenant/setAuth` with
    `authProvider=keycloak`, `issuerUrl=http://localhost:8180/realms/qod`, `baseUrl`, `realm=qod`,

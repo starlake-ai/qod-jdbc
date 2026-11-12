@@ -6,7 +6,9 @@
 
   <groupId>ai.starlake.qod</groupId>
   <artifactId>qod-jdbc</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <!-- Always the version of the Arrow Flight SQL JDBC driver this jar embeds: the dependency
+       below reads it from here, so the two cannot differ. -->
+  <version>19.0.0</version>
   <packaging>jar</packaging>
 
   <name>QoD JDBC driver</name>
@@ -25,7 +27,6 @@
   <properties>
     <maven.compiler.release>11</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <arrow.jdbc.version>19.0.0</arrow.jdbc.version>
     <nimbus.version>9.47</nimbus.version>
     <junit.version>5.11.4</junit.version>
   </properties>
@@ -35,7 +36,7 @@
     <dependency>
       <groupId>org.apache.arrow</groupId>
       <artifactId>flight-sql-jdbc-driver</artifactId>
-      <version>${arrow.jdbc.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.nimbusds</groupId>
@@ -52,6 +53,23 @@
   </dependencies>
 
   <build>
+    <resources>
+      <!-- qod-jdbc.properties carries the version; nothing else is filtered. -->
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>qod-jdbc.properties</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>qod-jdbc.properties</exclude>
+        </excludes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -91,6 +109,8 @@
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Automatic-Module-Name>ai.starlake.qod.jdbc</Automatic-Module-Name>
+                    <Implementation-Title>${project.name}</Implementation-Title>
+                    <Implementation-Version>${project.version}</Implementation-Version>
                   </manifestEntries>
                 </transformer>
               </transformers>

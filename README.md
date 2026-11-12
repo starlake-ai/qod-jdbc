@@ -40,8 +40,15 @@ the Arrow Flight SQL driver as is. The URL port defaults to `31338`, QoD's Fligh
 A failure reaches the driver at once: `oidc_not_configured` means neither the tenant nor the
 manager has an identity provider to sign in with, so use `user`/`password`.
 
-The manager must be QoD 0.12.3 or later, with `QOD_MGMT_PUBLIC_BASE_URL` set to the URL the
+The manager must be QoD 0.13.0 or later, with `QOD_MGMT_PUBLIC_BASE_URL` set to the URL the
 identity provider redirects back to.
+
+## Versions
+
+The driver's version is the version of the Arrow Flight SQL JDBC driver it embeds: qod-jdbc
+19.0.0 is Arrow's 19.0.0 plus the QoD authenticators, and `getMajorVersion` /
+`getMinorVersion` answer Arrow's. Moving to another Arrow release is one change, the
+`<version>` in `pom.xml`, which the Arrow dependency reads.
 
 ## Build
 

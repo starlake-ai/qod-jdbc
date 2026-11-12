@@ -137,6 +137,22 @@ class QodDriverTest {
   }
 
   @Test
+  void reportsTheEmbeddedArrowDriversVersion() throws Exception {
+    Driver arrow = new org.apache.arrow.driver.jdbc.ArrowFlightJdbcDriver();
+    QodDriver qod = new QodDriver();
+    assertEquals(arrow.getMajorVersion(), qod.getMajorVersion());
+    assertEquals(arrow.getMinorVersion(), qod.getMinorVersion());
+    // The jar's own version is the Arrow driver's (pom.xml reads one from the other).
+    java.util.Properties pom = new java.util.Properties();
+    try (java.io.InputStream in = QodDriver.class.getResourceAsStream("/qod-jdbc.properties")) {
+      pom.load(in);
+    }
+    assertEquals(
+        arrow.getMajorVersion() + "." + arrow.getMinorVersion(),
+        pom.getProperty("version").replaceAll("^(\\d+\\.\\d+).*", "$1"));
+  }
+
+  @Test
   void isRegisteredWithDriverManager() throws SQLException {
     assertTrue(DriverManager.getDriver("jdbc:qod://h") instanceof QodDriver);
     assertEquals("false", System.getProperty(QodDriver.NETTY_NO_UNSAFE));
