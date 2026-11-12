@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Release qod-jdbc from this checkout: build and test, tag v<version>, push the tag, and publish a
-# GitHub release holding the jar and its SHA-256.
+# Release qod-jdbc from this checkout: build and test, publish to Maven Central
+# (ai.starlake.qod:qod-jdbc, signed), tag v<version>, push the tag, and publish a GitHub release
+# holding the same jar and its SHA-256.
+#
+# Maven Central reads its credentials from SONATYPE_USERNAME / SONATYPE_PASSWORD (a Central Portal
+# user token), and signs with the key pom.xml's release profile names, without a passphrase prompt.
 #
 # The version is pom.xml's, which is the embedded Arrow Flight SQL JDBC driver's (19.0.0 embeds
 # Arrow's 19.0.0). Bump it there, commit and push, then run this.
@@ -54,8 +58,30 @@ if git rev-parse -q --verify "refs/tags/$tag" >/dev/null ||
   refuse "tag $tag already exists: bump the version in pom.xml"
 fi
 gh auth status >/dev/null 2>&1 || refuse "gh is not signed in (gh auth login)"
+[ -n "${SONATYPE_USERNAME:-}" ] && [ -n "${SONATYPE_PASSWORD:-}" ] ||
+  refuse "SONATYPE_USERNAME and SONATYPE_PASSWORD must hold a Maven Central Portal user token"
 
-mvn -B -q clean verify
+# Settings naming the Central server; they hold references to the environment, never a secret.
+settings=$(mktemp)
+trap 'rm -f "$settings"' EXIT
+cat >"$settings" <<'SETTINGS'
+<settings>
+  <servers>
+    <server>
+      <id>central</id>
+      <username>${env.SONATYPE_USERNAME}</username>
+      <password>${env.SONATYPE_PASSWORD}</password>
+    </server>
+  </servers>
+</settings>
+SETTINGS
+
+# The release build, signed; a dry run stops before the upload (skipUpload) and keeps the bundle.
+if [ "$dry" = 1 ]; then
+  mvn -B -q -s "$settings" -Prelease clean deploy -DskipUpload=true
+else
+  mvn -B -q -s "$settings" -Prelease clean verify
+fi
 [ -f "$jar" ] || { echo "release refused: the build made no $jar" >&2; exit 1; }
 if command -v sha256sum >/dev/null; then
   (cd target && sha256sum "$(basename "$jar")" >"$(basename "$jar").sha256")
@@ -66,6 +92,7 @@ echo "built $jar ($(du -h "$jar" | awk '{print $1}')), tests passed"
 cat "$jar.sha256"
 
 if [ "$dry" = 1 ]; then
+  echo "Maven Central bundle (not uploaded): target/central-publishing/central-bundle.zip"
   if [ "$refused" = 1 ]; then
     echo "dry run done: a release would have stopped at the refusals above" >&2
     exit 1
@@ -74,6 +101,11 @@ if [ "$dry" = 1 ]; then
   exit 0
 fi
 
+# Maven Central first: a version published there cannot change, so nothing is tagged before it
+# succeeds. The upload reuses the build above (the jar the GitHub release then carries).
+mvn -B -q -s "$settings" -Prelease deploy
+echo "published ai.starlake.qod:qod-jdbc:$version to Maven Central"
+
 git tag -a "$tag" -m "qod-jdbc $version"
 git push -q origin "$tag"
 gh release create "$tag" "$jar" "$jar.sha256" \
@@ -81,5 +113,5 @@ gh release create "$tag" "$jar" "$jar.sha256" \
   --title "qod-jdbc $version" \
   --notes "The QoD JDBC driver $version: the Apache Arrow Flight SQL JDBC driver $version, unchanged and bundled, plus \`authenticator=externalbrowser\`, a browser sign-in brokered by the QoD manager (QoD 0.13.0 or later).
 
-Download \`qod-jdbc-$version.jar\` and use it in place of the Arrow driver jar: driver class \`ai.starlake.qod.jdbc.QodDriver\`, URL \`jdbc:qod://<host>:31338?tenant=..&pool=..&authenticator=externalbrowser\`. Java 11 or later. See the README for every property."
+Download \`qod-jdbc-$version.jar\`, or take it from Maven Central as \`ai.starlake.qod:qod-jdbc:$version\`, and use it in place of the Arrow driver jar: driver class \`ai.starlake.qod.jdbc.QodDriver\`, URL \`jdbc:qod://<host>:31338?tenant=..&pool=..&authenticator=externalbrowser\`. Java 11 or later. See the README for every property."
 echo "released $tag: $(gh release view "$tag" --json url --jq .url)"

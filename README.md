@@ -13,6 +13,22 @@ provider. Once you are signed in, the tab says you can close it and the connecti
 token stays in the JVM until shortly before it expires, so later connections (DBeaver opens
 several) do not open the browser again. Nothing is written to disk.
 
+## Get it
+
+From the [latest GitHub release](https://github.com/starlake-ai/qod-jdbc/releases/latest), or
+from Maven Central as `ai.starlake.qod:qod-jdbc`:
+
+```xml
+<dependency>
+  <groupId>ai.starlake.qod</groupId>
+  <artifactId>qod-jdbc</artifactId>
+  <version>19.0.0</version>
+</dependency>
+```
+
+The jar bundles the Arrow driver, and its POM declares no dependencies: use it in place of
+`org.apache.arrow:flight-sql-jdbc-driver`, not beside it.
+
 ## Properties
 
 | Property | Default | Meaning |
@@ -65,13 +81,16 @@ turns `Unsafe` off there while its allocator needs it.
 
 ```
 ./release.sh --dry-run   # every check and the build, nothing tagged or published
-./release.sh             # tag v<version>, push it, publish a GitHub release with the jar
+./release.sh             # publish to Maven Central, tag v<version>, publish a GitHub release
 ```
 
 The version is `pom.xml`'s. The script refuses a snapshot version, a branch other than `main`,
 a working tree with changes, a `HEAD` that is not `origin/main`, a tag that already exists, and
-a `gh` that is not signed in. It then runs `mvn clean verify`, tags `v<version>`, pushes the tag
-and publishes the jar and its SHA-256 as a GitHub release.
+a `gh` that is not signed in, and missing `SONATYPE_USERNAME` / `SONATYPE_PASSWORD` (a Central
+Portal user token). It then builds and tests with `-Prelease` (sources, javadoc, signatures),
+publishes `ai.starlake.qod:qod-jdbc:<version>` to Maven Central, tags `v<version>`, pushes the
+tag and publishes the same jar and its SHA-256 as a GitHub release. The dry run builds the Central
+bundle (`target/central-publishing/central-bundle.zip`) without uploading it.
 
 ## License
 

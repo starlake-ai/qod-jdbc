@@ -17,12 +17,29 @@
     authenticator=externalbrowser, a browser sign-in brokered by the QoD manager.
   </description>
 
+  <url>https://github.com/starlake-ai/qod-jdbc</url>
+
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
       <url>https://www.apache.org/licenses/LICENSE-2.0</url>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <name>Hayssam Saleh</name>
+      <organization>Starlake</organization>
+      <organizationUrl>https://starlake.ai</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/starlake-ai/qod-jdbc</url>
+    <connection>scm:git:https://github.com/starlake-ai/qod-jdbc.git</connection>
+    <developerConnection>scm:git:https://github.com/starlake-ai/qod-jdbc.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
   <properties>
     <maven.compiler.release>11</maven.compiler.release>
@@ -92,7 +109,10 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <!-- The POM published with the jar declares neither the Arrow driver nor Nimbus,
+                   which the jar bundles: a user's build must not fetch a second copy. -->
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
               <relocations>
                 <relocation>
                   <pattern>com.nimbusds</pattern>
@@ -130,4 +150,71 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- mvn -Prelease deploy: sources, javadoc and signatures, then a Maven Central upload
+         through the server `central` (release.sh writes the settings for it). -->
+    <profile>
+      <id>release</id>
+      <properties>
+        <!-- The key that signs releases; it is on keyserver.ubuntu.com. -->
+        <gpg.keyname>52A566161071641DB02363C03FB689352BFA6DC6</gpg.keyname>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.12.0</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.8</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.12.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
