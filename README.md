@@ -61,6 +61,18 @@ Java 25 the driver sets `org.apache.arrow.driver.jdbc.shaded.io.netty.noUnsafe=f
 Arrow driver loads, unless the application set it, since the Netty the Arrow driver bundles
 turns `Unsafe` off there while its allocator needs it.
 
+## Releasing
+
+```
+./release.sh --dry-run   # every check and the build, nothing tagged or published
+./release.sh             # tag v<version>, push it, publish a GitHub release with the jar
+```
+
+The version is `pom.xml`'s. The script refuses a snapshot version, a branch other than `main`,
+a working tree with changes, a `HEAD` that is not `origin/main`, a tag that already exists, and
+a `gh` that is not signed in. It then runs `mvn clean verify`, tags `v<version>`, pushes the tag
+and publishes the jar and its SHA-256 as a GitHub release.
+
 ## License
 
 Apache License 2.0.
